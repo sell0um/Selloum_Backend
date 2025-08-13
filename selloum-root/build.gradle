@@ -1,0 +1,68 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+
+plugins {
+    id 'org.springframework.boot' version '3.5.4' apply false
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+}
+
+subprojects {
+
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+    
+    java {
+	    toolchain {
+	        languageVersion = JavaLanguageVersion.of(17)
+	    }
+	}
+	
+	dependencyManagement {
+	    imports {
+	        mavenBom "org.springframework.boot:spring-boot-dependencies:3.5.4"
+	    }
+	}
+    
+    
+	group = 'com.selloum'
+	version = '0.0.1-SNAPSHOT'
+    
+    
+    repositories { mavenCentral() }
+    
+    // 공통 컴파일 설정
+    configurations {
+        compileOnly { extendsFrom annotationProcessor }
+    }
+    
+    
+     // 공통 의존성
+    dependencies {
+        
+        // Lombok Dependencies
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.projectlombok:lombok'
+
+		// Test Dependencies
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+
+    tasks.named('test') { useJUnitPlatform() }
+}
+
+project(':selloum-api') {
+    apply plugin: 'org.springframework.boot'
+
+    tasks.bootJar { enabled = true; archiveFileName = 'selloum-api.jar' }
+    tasks.jar { enabled = false }
+}
+
+project(':selloum-batch') {
+    apply plugin: 'org.springframework.boot'
+}
+
+

@@ -1,0 +1,44 @@
+# server
+server:
+  port: 9090
+
+
+# Spring Boot 
+spring:
+  config:
+    import: optional:file:../.env[.properties]
+  application:
+    name:
+      selloum-root
+  datasource:                               # Main DataBase - MySQL
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: ${DB_DRIVER}
+  jpa:
+    show-sql: true
+    generate-ddl: true
+    hibernate:
+      ddl-auto: create
+      default_batch_fetch_size: 100
+
+
+springdoc:
+  swagger-ui:
+    groups-order: DESC
+    operations-sorter: method
+    display-request-duration: true
+  show-actuator: true
+
+
+jwt:
+  secret-key: ${JWT_TOKEN_SECRET}
+  expiration: ${JWT_TOKEN_EXPIRATION}
+  prefix: ${JWT_TOKEN_PREFIX}
+  issuer: ${JWT_TOKEN_ISSUER}
+
+
+
+
+
+

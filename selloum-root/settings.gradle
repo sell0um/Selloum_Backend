@@ -1,0 +1,3 @@
+rootProject.name = 'selloum-root'
+
+include 'selloum-api', 'selloum-domain', 'selloum-external', 'selloum-batch', 'selloum-core'

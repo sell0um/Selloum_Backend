@@ -1,0 +1,13 @@
+project(':selloum-external') {
+    dependencies {
+	    
+	    implementation project(':selloum-core')
+	    implementation project(':selloum-domain')
+	
+	    implementation 'org.springframework.boot:spring-boot-starter-web'
+	    implementation 'org.springframework.boot:spring-boot-starter-validation'
+        
+        
+    }
+
+}
