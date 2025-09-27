@@ -10,7 +10,8 @@ spring:
   application:
     name:
       selloum-root
-  datasource:                               # Main DataBase - MySQL
+# Main DataBase - MySQL
+  datasource:                               
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
@@ -33,9 +34,12 @@ springdoc:
 
 jwt:
   secret-key: ${JWT_TOKEN_SECRET}
-  expiration: ${JWT_TOKEN_EXPIRATION}
   prefix: ${JWT_TOKEN_PREFIX}
   issuer: ${JWT_TOKEN_ISSUER}
+  expiration: 
+    access: ${JWT_TOKEN_ACCESS_EXPIRATION}
+    refresh: ${JWT_TOKEN_REFRESH_EXPIRATION}
+  
 
 
 
