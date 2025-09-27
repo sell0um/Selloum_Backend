@@ -25,6 +25,10 @@ subprojects {
 	        mavenBom "org.springframework.boot:spring-boot-dependencies:3.5.4"
 	    }
 	}
+	
+	tasks.withType(JavaCompile) {
+	    options.encoding = 'UTF-8'
+	}
     
     
 	group = 'com.selloum'

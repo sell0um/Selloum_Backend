@@ -1,4 +1,4 @@
-package com.selloum.api.controller.auth;
+package com.selloum.api.auth.controller;
 
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,8 +10,8 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "Auth", description = "Authentication API")
-@RequestMapping("/api/member")
+@Tag(name = "User", description = "User 관련 API")
+@RequestMapping("/api/users")
 public class UserController {
 
 }
