@@ -10,6 +10,14 @@ spring:
   application:
     name:
       selloum-root
+
+# Redis
+  data:
+    redis:
+      host: ${REDIS_HOST} 
+      port: ${REDIS_PORT}
+      blacklist-key: ${REDIS_BLACKLIST_KEY}
+
 # Main DataBase - MySQL
   datasource:                               
     url: ${DB_URL}
@@ -23,6 +31,33 @@ spring:
       ddl-auto: create
       default_batch_fetch_size: 100
 
+# Email Verifying
+  mail:
+    password: ${EMAIL_PASSWORD}
+    username: ${EMAIL_USERNAME}
+    host: ${EMAIL_HOST}
+    port: ${EMAIL_PORT}
+    properties:
+      mail:
+        smtp:
+          starttls:
+            enable: true
+            required: true
+          auth: true
+          connectiontimeout: 5000
+          writetimeout: 5000
+          timeout: 5000
+    auth-code-expiration-millis: 1800000
+
+
+# Email Property
+mail:
+  from:
+    email: ${MAIL_FROM_EMAIL}
+    name: Example Service
+  support:
+  email: support@example.com
+  prefix: ${EMAIL_REDIS_PREFIX}
 
 springdoc:
   swagger-ui:
@@ -33,6 +68,9 @@ springdoc:
 
 
 jwt:
+  header:
+    access: ${JWT_TOKEN_ACCESS_HEADER}
+    refresh: ${JWT_TOKEN_REFRESH_HEADER}
   secret-key: ${JWT_TOKEN_SECRET}
   prefix: ${JWT_TOKEN_PREFIX}
   issuer: ${JWT_TOKEN_ISSUER}
@@ -41,7 +79,9 @@ jwt:
     refresh: ${JWT_TOKEN_REFRESH_EXPIRATION}
   
 
-
+logging:
+  level:
+    org.springframework.security.web.FilterChainProxy: TRACE
 
 
 

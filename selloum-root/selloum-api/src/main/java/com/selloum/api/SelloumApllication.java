@@ -8,7 +8,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication(scanBasePackages = {
 		"com.selloum.api",
-		"com.selloum.domain"
+		"com.selloum.domain",
+		"com.selloum.core",
+		"com.selloum.external",
 })
 @EnableJpaRepositories(basePackages = "com.selloum.domain.repository")
 @EntityScan(basePackages = "com.selloum.domain.entity")

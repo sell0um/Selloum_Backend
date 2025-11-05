@@ -6,11 +6,13 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.selloum.api.auth.dto.UserDto;
+import com.selloum.api.common.handler.CustomAuthenticationFailureHandler;
+import com.selloum.api.common.handler.CustomAuthenticationSuccessHandler;
+import com.selloum.api.user.dto.UserDto;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -23,10 +25,14 @@ import lombok.RequiredArgsConstructor;
  * 
  */
 
-@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+	
+	@PostConstruct
+	public void init() {
+	    LOGGER.info("🔥 JwtAuthenticationFilter Bean initialized with URL: {}");
+	}
 	
 	public JwtAuthenticationFilter(AuthenticationManager authenticationManager 
 									, CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler
@@ -40,12 +46,15 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 	
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
+		
+		LOGGER.info(" [ JwtAuthenticationFilter - attemptAuthentication ] : " );
+
 
 		try {
 			ObjectMapper om = new ObjectMapper();
 			UserDto.request userDto = om.readValue(request.getInputStream(), UserDto.request.class);
 
-			LOGGER.info("Login attempt : {}", userDto.getUserName());
+			LOGGER.info(" [ JwtAuthenticationFilter - attemptAuthentication ] : " + userDto.getUserName());
 			
 			UsernamePasswordAuthenticationToken authRequest = new UsernamePasswordAuthenticationToken(userDto.getUserName(), userDto.getPassword());		
 			

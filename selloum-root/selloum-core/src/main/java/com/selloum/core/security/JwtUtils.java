@@ -3,6 +3,8 @@ package com.selloum.core.security;
 import java.security.Key;
 import java.util.Date;
 
+import org.springframework.stereotype.Component;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 
@@ -11,6 +13,7 @@ import io.jsonwebtoken.Jwts;
  * @author hongseok
  * @since 09/15/25
  */
+@Component
 public class JwtUtils {
 	
 	public static Claims getClaims(String token, Key key) {
