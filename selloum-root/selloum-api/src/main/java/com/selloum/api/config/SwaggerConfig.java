@@ -19,13 +19,17 @@ import io.swagger.v3.oas.models.OpenAPI;
 @Configuration
 public class SwaggerConfig {
 	
-	@Value("${JWT_TOKEN_PREFIX}")
+	@Value("$jwt.prefix")
 	String JWT_TOKEN_PREFIX;
 	
-	@Bean
+    @Bean
     public OpenAPI openAPI() {
         return new OpenAPI()
-                .components(new Components());
+                .components(new Components())
+                .info(new io.swagger.v3.oas.models.info.Info()
+                        .title("Selloum API")
+                        .description("Selloum Diary 백엔드 API 명세서")
+                        .version("v1.0"));
     }
 
 }

@@ -1,27 +1,28 @@
 package com.selloum.domain.entity;
 
-import java.util.ArrayList;
 import java.util.List;
+
+import org.hibernate.annotations.ColumnDefault;
 
 import com.selloum.domain.common.BaseEntity;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.ToString;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
-@Data
+@NoArgsConstructor
+@Getter
+@AllArgsConstructor
 @Table(name = "user")
-@Builder
 public class User extends BaseEntity {
 	
 	/*
@@ -43,13 +44,30 @@ public class User extends BaseEntity {
 	
 	@Column(nullable = false)
 	private String email;
+
+	@Column(nullable = false)
+	private String role;
 	
 	private String phone;
 	
+	private String status;
+	
+	
+    @Builder  // 생성자에 직접 붙이기
+    public User(String name, String username, String password, 
+                String email, String role, String phone, String status) {
+        this.name = name;
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        this.role = role;
+        this.phone = phone;
+        this.status = status;
+    }
+	
+	
+	
 //	private String profileImage;
-	
-	private String Role;
-	
 	
 //	/*
 //	 * 연관관계 관련 필드

@@ -1,21 +1,32 @@
 package com.selloum.api.common.response;
 
+import com.selloum.api.common.code.ErrorCode;
+import com.selloum.api.common.code.ResponseCode;
+
 import lombok.Getter;
 
 @Getter
-public class BaseResponse {
+public class BaseResponse<T> {
 	
-	private int status;
     private String code;
     private String message;
-    private Object data;
+    private T data;
 
-    public static BaseResponse of(ResponseCode responseCode, Object data) {
-        return new BaseResponse(responseCode, data);
+    public static <T> BaseResponse<T> of(ResponseCode responseCode, T data) {
+        return new BaseResponse<>(responseCode, data);
+    }
+    
+    public static <T> BaseResponse<T> of(ErrorCode responseCode, T data) {
+        return new BaseResponse<>(responseCode, data);
     }
 
-    public BaseResponse(ResponseCode resultCode, Object data) {
-        this.status = resultCode.getStatus();
+    public BaseResponse(ResponseCode resultCode, T data) {
+        this.code = resultCode.getCode();
+        this.message = resultCode.getMessage();
+        this.data = data;
+    } 
+    
+    public BaseResponse(ErrorCode resultCode, T data) {
         this.code = resultCode.getCode();
         this.message = resultCode.getMessage();
         this.data = data;
