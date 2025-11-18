@@ -12,7 +12,9 @@ public interface MailService {
      * @throws MessagingException 
      */
 	void sendEmail(String email);
-	boolean verifyEmail(String email, String verifyCode);
+	boolean isVerifiedEmail(String email, String verifyCode);
 	
+	void sendResetCodeEmail(String email);
+	boolean isverifiedResetCodeEmail(String email, String verifyCode);
 
 }

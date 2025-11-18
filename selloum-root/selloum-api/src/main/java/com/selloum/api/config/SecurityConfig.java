@@ -85,7 +85,8 @@ public class SecurityConfig {
 						.requestMatchers(
 								"/users/email",
 								"/users/email/confirm",
-								"/users/sign-up"
+								"/users/sign-up",
+								"/users/check-id"
 								).permitAll()
 						// Swagger
 					    .requestMatchers(
@@ -95,19 +96,16 @@ public class SecurityConfig {
 					            "/swagger-resources/**",
 					            "/webjars/**"
 					    		).permitAll()
-					    
 					    // ADMIn 관련은 접근 제한
 						.requestMatchers(
 								"/admin/**"
 							).hasRole("ADMIN")
-						
-						
 						// 나머지는 인증 필요
 						.anyRequest().authenticated())
 				
 				// 인가 필터 실행 -> 다음 인증 필터
 				.addFilterAt(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-				.addFilterBefore(jwtAuthorizationFilter, JwtAuthenticationFilter.class)
+				.addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
 				.addFilterBefore(customLogoutFilter, LogoutFilter.class)								// 로그아웃 필터
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) 	//세션 미사용
 				.formLogin((auth) -> auth.disable())			

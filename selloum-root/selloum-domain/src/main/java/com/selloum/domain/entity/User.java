@@ -1,9 +1,5 @@
 package com.selloum.domain.entity;
 
-import java.util.List;
-
-import org.hibernate.annotations.ColumnDefault;
-
 import com.selloum.domain.common.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -14,7 +10,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -63,7 +58,8 @@ public class User extends BaseEntity {
         this.role = role;
         this.phone = phone;
         this.status = status;
-    }
+    }  
+    
 	
 	
 	
@@ -81,6 +77,23 @@ public class User extends BaseEntity {
 //	@ToString.Exclude
 //	private List<Report> reportList = new ArrayList<>();
 //	
+    
+    
+    public void userDelete() {
+    	this.status = "DELETED";
+    }
+    
+    public void updateInfo(String name, String username, String email, String phone) {
+    	this.name = name;
+    	this.username = username;
+    	this.email = email;
+    	this.phone = phone;
+    }
+    
+    
+    public void changePassword(String encodedPwd) {
+    	this.password = encodedPwd;
+    }
 	
 	
 }

@@ -57,7 +57,10 @@ mail:
     name: Example Service
   support:
   email: support@example.com
-  prefix: ${EMAIL_REDIS_PREFIX}
+  prefix: 
+    register: ${EMAIL_REDIS_PREFIX}
+    reset-code: ${EMAIL_REDIS_PREFIX}
+    reset-verify: ${EMAIL_REDIS_PREFIX}
 
 springdoc:
   swagger-ui:
