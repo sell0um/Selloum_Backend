@@ -22,6 +22,14 @@ public enum ErrorCode {
 	 TOKEN_MISSING(Status.UNAUTHORIZED, "E-A005", "토큰이 존재하지 않습니다."),
 	 INVALID_CREDENTIAL(Status.BAD_REQUEST, "E-A006", "잘못된 인증 정보입니다."),
 	 UNSUPPORTED_AUTH_METHOD(Status.BAD_REQUEST, "E-A007", "지원되지 않는 인증 방식입니다."),
+	 TOKEN_REFRESH_FAIL(Status.UNAUTHORIZED, "E-A008", "토큰 갱신에 실패했습니다."),
+	 
+	 /* ==============================
+	    EMAIL (E-Exxx)
+	    ============================== */
+    EMAIL_VERIFY_FAILED(Status.INTERNAL_SERVER_ERROR,"E-E001","이메일 인증이 실패하였습니다."),
+    EMAIL_ALREADY_VERIFIED(Status.INTERNAL_SERVER_ERROR, "E-E002", "이미 인증 완료한 이메일입니다."),
+    EMAIL_CODE_EXPIRED(Status.INTERNAL_SERVER_ERROR, "E-E002", "이메일 인증 코드가 만료되었습니다."),
 	
 	 /* ==============================
 	    USER (E-Uxxx)

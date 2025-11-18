@@ -1,9 +1,23 @@
 package com.selloum.core.Exception;
 
-import lombok.Data;
+import com.selloum.core.code.ErrorCode;
+import com.selloum.core.code.Status;
 
-@Data
+
 public class CustomException extends RuntimeException {
 
-	public CustomException() {};
+	private final ErrorCode errorCode;
+
+    public CustomException(ErrorCode errorCode) {
+        super(errorCode.getMessage());
+        this.errorCode = errorCode;
+    }
+
+    public ErrorCode getErrorCode() {
+        return errorCode;
+    }
+
+    public Status getStatus() {
+        return errorCode.getStatus();
+    }
 }
