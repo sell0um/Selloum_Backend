@@ -37,6 +37,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider{
 		String rawPassword = (String) authentication.getCredentials();
 		
 		UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+		LOGGER.info("Passwoard Test : " + rawPassword + " : " +  userDetails.getPassword());
 		
 		// 비밀번호 검증
 		if(!bCryptPasswordEncoder.matches(rawPassword, userDetails.getPassword())) {

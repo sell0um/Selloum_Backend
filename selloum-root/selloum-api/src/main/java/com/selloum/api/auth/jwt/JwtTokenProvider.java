@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import com.selloum.api.auth.domain.CustomUserDetails;
 import com.selloum.core.Exception.CustomException;
+import com.selloum.core.code.ErrorCode;
 import com.selloum.domain.entity.User;
 
 import io.jsonwebtoken.Claims;
@@ -69,9 +70,9 @@ public class JwtTokenProvider {
 		     Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token);
 	            return true;
 	        } catch (ExpiredJwtException e) {
-	            throw new CustomException();
+	            throw new CustomException(ErrorCode.EXPIRED_TOKEN);
 	        } catch (JwtException | IllegalArgumentException e) {
-	            throw new CustomException();
+	            throw new CustomException(ErrorCode.INVALID_TOKEN);
 	        }
 	}
 	
@@ -82,6 +83,10 @@ public class JwtTokenProvider {
 	
 	public String getRole(String token) {
 		return parseClaims(token).get("role", String.class);
+	}
+	
+	public Long getExprired(String token) {
+		return parseClaims(token).get("role", Long.class);
 	}
 	
 	public boolean isExpired(String token) {
@@ -108,7 +113,7 @@ public class JwtTokenProvider {
         CustomUserDetails userDetails = new CustomUserDetails(user);
 
         // 5 Authentication 객체 반환
-        return new UsernamePasswordAuthenticationToken(user, null, authorities);
+        return new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
     }
 	
     // Claims 파싱
@@ -118,6 +123,10 @@ public class JwtTokenProvider {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+    
+    public long getAccessTokenExpiration() {
+    	return Long.parseLong(accessTokenExpiredTime);
     }
     
     public long getRefreshTokenExpiration() {

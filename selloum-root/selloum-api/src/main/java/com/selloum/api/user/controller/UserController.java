@@ -3,6 +3,7 @@ package com.selloum.api.user.controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.selloum.api.auth.domain.CustomUserDetails;
+import com.selloum.api.auth.jwt.RedisTokenUtils;
 import com.selloum.api.common.code.ResponseCode;
 import com.selloum.api.common.response.BaseResponse;
 import com.selloum.api.common.response.ResponseUtil;
@@ -24,6 +27,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -35,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
 	
 	private final Logger LOGGER = LoggerFactory.getLogger(UserController.class);
+	private final RedisTokenUtils redisTokenUtils;
 	private final UserService userService;
 	private final MailService mailService;
 	
@@ -81,9 +86,8 @@ public class UserController {
 	public ResponseEntity<BaseResponse<String>> checkUserName(@Valid @RequestBody UserDto.request req){
 		
 		LOGGER.info("[ UserController - checkUserName ] : 아이디 중복 확인" + req.getUserName());
-		boolean isExists = userService.checkUserName(req.getUserName());
-		return ResponseUtil.success(ResponseCode.REGISTER_SUCCESS,
-				isExists ? "EXISTS": "Not EXISTS" );
+		userService.validateUserName(req.getUserName());
+		return ResponseUtil.success(ResponseCode.AVAILABLE_USERNAME,"NotExsists");
 		
 	}
 	
@@ -96,7 +100,12 @@ public class UserController {
 	 * @param req
 	 * @return
 	 */
-	
+	@Operation(summary = "이메일 인증 코드 발송 요청", description = "회원 가입 시 등록된 이메일로 인증 코드 발송 요청")
+	@ApiResponses({		
+			@ApiResponse(responseCode = "200", description = "성공"),
+			@ApiResponse(responseCode = "400" , description = "실패")
+			
+	})
 	@PostMapping("/email")
 	public ResponseEntity<BaseResponse<String>> sendEmail(@Valid @RequestBody EmailDto.sendRequest req){
 		
@@ -113,19 +122,24 @@ public class UserController {
 	 * @param req
 	 * @return
 	 */
-	
+	@Operation(summary = "이메일 인증 코드 검증", description = "회원 가입 시 이메일 인증 코드 동일 여부 확인")
+	@ApiResponses({		
+			@ApiResponse(responseCode = "200", description = "성공"),
+			@ApiResponse(responseCode = "400" , description = "실패")
+			
+	})
 	@PostMapping("/email/confirm")
 	public ResponseEntity<BaseResponse<EmailDto.response>> verifyEmail(@Valid @RequestBody EmailDto.verifyRequest req){
 		
 		LOGGER.info("[ UserController - verifyEmail ] : 이메일 인증 확인" + req.getEmail());
 		
-		boolean isValid = mailService.verifyEmail(req.getEmail(), req.getVerifyCode());
+		boolean isValid = mailService.isVerifiedEmail(req.getEmail(), req.getVerifyCode());
 		EmailDto.response response = EmailDto.response.builder()
 						.verifyCode(req.getVerifyCode())
 						.result(isValid)
 						.build();
 		
-		return ResponseUtil.success(ResponseCode.REGISTER_SUCCESS,response);
+		return ResponseUtil.success(ResponseCode.EMAIL_VERIFY_SUCCESS,response);
 		
 	}
 	
@@ -138,29 +152,37 @@ public class UserController {
 	 * @return
 	 */
 	
+	@Operation(summary = "회원 정보 조회", description = "회원 정보 조회")
+	@ApiResponses({		
+			@ApiResponse(responseCode = "200", description = "성공"),
+			@ApiResponse(responseCode = "400" , description = "실패")
+			
+	})
+	
 	@GetMapping("/me")
-	public ResponseEntity<BaseResponse<UserDto.response>> getUserDetail(@Valid @RequestBody UserDto.request req){
+	public ResponseEntity<BaseResponse<UserDto.response>> getUserDetail(@AuthenticationPrincipal CustomUserDetails userDetails){
 		
-		LOGGER.info("[ UserController - checkUserName ] : 아이디 중복 확인" + req.getUserName());
-		UserDto.response response = userService.getUserDetail(req.getUserName());
-		return ResponseUtil.success(ResponseCode.EMAIL_VERIFY_SUCCESS,response);
+		LOGGER.info("[ UserController - getUserDetail ] : 회원 정보 조회" + userDetails.getUser().getUsername());
+		UserDto.response response = userService.getUserDetail(userDetails.getUser().getUsername());
+		return ResponseUtil.success(ResponseCode.USER_FOUND,response);
 		
 	}
 	
 	/**
 	 * 
-	 * updateUserDetail() - 회원 상세 수정
+	 * updateUserDetail() - 회원 정보 수정
 	 * 
 	 * @param req
 	 * @return
 	 */
 	
 	@PutMapping("/me")
-	public ResponseEntity<BaseResponse<UserDto.response>> updateUserDetail(@Valid @RequestBody UserDto.request req){
+	public ResponseEntity<BaseResponse<UserDto.response>> updateUser(@AuthenticationPrincipal CustomUserDetails userDetails
+																	, @Valid @RequestBody UserDto.request req){
 		
-		LOGGER.info("[ UserController - checkUserName ] : 아이디 중복 확인" + req.getUserName());
-		
-		return ResponseUtil.success(ResponseCode.REGISTER_SUCCESS,null);
+		LOGGER.info("[ UserController - updateUser ] : 회원 정보 수정" + userDetails.getUser().getUsername());
+		UserDto.response response = userService.updateUser(userDetails.getUser().getUsername(), req);
+		return ResponseUtil.success(ResponseCode.USER_UPDATED,response);
 		
 	}
 	
@@ -173,13 +195,9 @@ public class UserController {
 	 */
 	
 	@DeleteMapping("/me")
-	public ResponseEntity<BaseResponse<String>> deleteUserDetail(@Valid @RequestBody UserDto.request req){
-		
-		LOGGER.info("[ UserController - deleteUserDetail ] : 회원 탈퇴" + req.getUserName());
-		
-		
-		return ResponseUtil.success(ResponseCode.REGISTER_SUCCESS,null);
-		
+	public ResponseEntity<BaseResponse<String>> deleteUser(@Valid @RequestBody UserDto.request req , HttpServletRequest servletRequest){
+		userService.deleteUser(req.getPassword(), servletRequest);
+		return ResponseUtil.success(ResponseCode.DELETED_USER,null);
 	}
 	
 	/**
@@ -191,12 +209,14 @@ public class UserController {
 	 */
 	
 	@PutMapping("/me/password")
-	public ResponseEntity<BaseResponse<String>> updatePassword(@Valid @RequestBody UserDto.request req){
+	public ResponseEntity<BaseResponse<String>> updatePassword( @AuthenticationPrincipal CustomUserDetails userDetails,
+																@Valid @RequestBody UserDto.request req){
 		
-		LOGGER.info("[ UserController - updatePassword ] : 비밀번호 변경" + req.getUserName());
+		LOGGER.info("[ UserController - updatePassword ] : 비밀번호 변경" + userDetails.getUser().getUsername());
+		LOGGER.info("[ UserController - updatePassword ] : 비밀번호 변경" + req.getPassword());
+		userService.updatePassword(userDetails.getUser().getUsername(), req);
 		
-		
-		return ResponseUtil.success(ResponseCode.REGISTER_SUCCESS,null);
+		return ResponseUtil.success(ResponseCode.PASSWORD_CHANGED,null);
 		
 	}
 	
@@ -211,10 +231,10 @@ public class UserController {
 	@PostMapping("/find-id")
 	public ResponseEntity<BaseResponse<String>> findUserName(@Valid @RequestBody UserDto.request req){
 		
-		LOGGER.info("[ UserController - findUserName ] : 아이디 찾기" + req.getUserName());
-
+		LOGGER.info("[ UserController - findUserName ] : 아이디 찾기" + req.getName());
+		String userName = userService.findUserName(req);
 		
-		return ResponseUtil.success(ResponseCode.REGISTER_SUCCESS,null);
+		return ResponseUtil.success(ResponseCode.USER_FOUND,userName);
 		
 	}
 	
@@ -226,13 +246,51 @@ public class UserController {
 	 * @return
 	 */
 	
-	@PostMapping("/find-pwd")
-	public ResponseEntity<BaseResponse<String>> findPassword(@Valid @RequestBody UserDto.request req){
+	@PostMapping("/reset-pwd/request")
+	public ResponseEntity<BaseResponse<String>> verifyUserIdentity(@Valid @RequestBody UserDto.request req){
 		
-		LOGGER.info("[ UserController - findPassword ] : 비밀번호 찾기" + req.getUserName());
+		LOGGER.info("[ UserController - verifyUserIdentity ] : 비밀번호 재설정 전 본인 인증" + req.getUserName());
 		
+		userService.verifyUserIdentity(req);
+		mailService.sendResetCodeEmail(req.getEmail());
 		
-		return ResponseUtil.success(ResponseCode.REGISTER_SUCCESS,null);
+		return ResponseUtil.success(ResponseCode.EMAIL_SEND_SUCCESS, null);
+		
+	}
+	
+	@PostMapping("/reset-pwd/verify")
+	public ResponseEntity<BaseResponse<EmailDto.response>> verifyResetEmailCode(@Valid @RequestBody EmailDto.verifyRequest req){
+		
+		LOGGER.info("[ UserController - verifyUserIdentity ] : 비밀번호 재설정 전 본인 인증 코드 유효성 검사" + req.getEmail());
+		
+		boolean isValid = mailService.isverifiedResetCodeEmail(req.getEmail(), req.getVerifyCode());
+		EmailDto.response response = EmailDto.response.builder()
+						.verifyCode(req.getVerifyCode())
+						.result(isValid)
+						.build();
+		
+		return ResponseUtil.success(ResponseCode.EMAIL_VERIFY_SUCCESS,response);
+		
+	}
+	
+	
+	/**
+	 * 
+	 * findPassword() - 비밀번호 조회
+	 * 
+	 * @param req
+	 * @return
+	 */
+	@PutMapping("/reset-pwd")
+	public ResponseEntity<BaseResponse<String>> resetPassword(@Valid @RequestBody UserDto.request req){
+		
+		LOGGER.info("[ UserController - resetPassword ] : 비밀번호 초기화 진행" + req.getUserName());
+		
+		if(redisTokenUtils.isVerifiedResetCodeEmail(req.getEmail())) { // 인증된 이메일 + 5분 이내 재설정이면
+			userService.resetPassword(req);
+		}
+		
+		return ResponseUtil.success(ResponseCode.PASSWORD_CHANGED,null);
 		
 	}
 	

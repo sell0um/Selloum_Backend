@@ -1,11 +1,9 @@
 package com.selloum.api.common.handler;
 
 import java.io.IOException;
-import java.time.Duration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -15,9 +13,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.selloum.api.auth.domain.CustomUserDetails;
 import com.selloum.api.auth.jwt.JwtTokenProvider;
-import com.selloum.api.common.code.ErrorCode;
+import com.selloum.api.auth.jwt.RedisTokenUtils;
 import com.selloum.api.common.code.ResponseCode;
 import com.selloum.api.common.response.BaseResponse;
+import com.selloum.core.code.ErrorCode;
 import com.selloum.domain.entity.User;
 
 import jakarta.servlet.ServletException;
@@ -32,8 +31,8 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
 	private final Logger LOGGER = LoggerFactory.getLogger(CustomAuthenticationSuccessHandler.class);
 	
 	private final JwtTokenProvider jwtTokenProvider;
-
-	private final RedisTemplate<String, Object> redisTemplate;
+	
+	private final RedisTokenUtils redisTokenUtils;
 
 	
 	@Override
@@ -48,7 +47,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         
         if(user.getStatus().equals("D")) { // 회원 상태가 D(delete)라면
         	response.setStatus(HttpStatus.FORBIDDEN.value());
-            writeJsonResponse(response, BaseResponse.of(ErrorCode.DELETED_USER, null));
+            writeJsonResponse(response, BaseResponse.of(ErrorCode.DELETED_USER));
             return;
         	
         }
@@ -63,7 +62,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
     	// refreshToken DB(Redis)에 저장
     	long refreshExp = jwtTokenProvider.getRefreshTokenExpiration();
         String redisKey = "refresh:" + user.getUsername();
-        redisTemplate.opsForValue().set(redisKey, refreshToken, Duration.ofMillis(refreshExp));
+        redisTokenUtils.saveRefreshToken(redisKey, refreshToken, refreshExp);
     	
         
     	response.setHeader("Authorization", jwtTokenProvider.getTokenWithPrefix(accessToken));

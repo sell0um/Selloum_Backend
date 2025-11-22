@@ -4,9 +4,15 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.GenericFilterBean;
 
+import com.selloum.api.common.code.ResponseCode;
+import com.selloum.api.user.dto.UserDto.request;
+import com.selloum.core.code.ErrorCode;
 import com.selloum.core.security.JwtUtils;
 
 import jakarta.servlet.FilterChain;
@@ -22,22 +28,13 @@ import lombok.RequiredArgsConstructor;
 public class CustomLogoutFilter extends GenericFilterBean{
 	
 	private final JwtTokenProvider jwtTokenProvider;
-	private final JwtUtils jwtUtils;
+	private final JwtUtils jwtUtils;	
+	private final RedisTokenUtils redisTokenUtils;
 	
-	
-	private static final List<String> WHITELIST_URLS = Arrays.asList(
-		    "/swagger-ui",
-		    "/v3/api-docs",
-		    "/v3/api-docs.yaml",
-		    "/swagger-resources",
-		    "/webjars",
-		    "/favicon.ico",
-		    "/auth/login",
-		    "/users/sign-up",
-		    "/users/email",
-		    "/users/email/confirm"
-    );
-	
+	@Value("${jwt.header.access}")
+	private String accessTokenHeader;
+	@Value("${jwt.prefix}")
+	private String prefix;
 	
 	@Override
 	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -48,16 +45,48 @@ public class CustomLogoutFilter extends GenericFilterBean{
 	private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws IOException, ServletException {
 		
-		String uri = request.getRequestURI();
+        if (!request.getRequestURI().equals("/auth/logout") ||
+                !request.getMethod().equalsIgnoreCase("POST")) {
+                filterChain.doFilter(request, response);
+                return;
+        }
+            
 		
+		String accessToken = request.getHeader(accessTokenHeader);
 		
-		// 토큰이 필요하지 않는 API 호출 발생 시 : 아래 로직 처리 없이 다음 필터로 이동
-		if (WHITELIST_URLS.stream().anyMatch(uri::startsWith)) {
-		    filterChain.doFilter(request, response);
-		    return;
+		if(accessToken == null || Strings.isBlank(accessToken) ) { // 토큰 미존재 시
+			writeErrorResponse(response, ErrorCode.TOKEN_MISSING);
 		}
 		
+		accessToken = jwtTokenProvider.getTokenWithoutPrefix(accessToken);
+		String userName = jwtTokenProvider.getUsername(accessToken);
+		
+		
+		redisTokenUtils.deleteRefreshToken(userName);
+		
+		long expiration = jwtTokenProvider.getAccessTokenExpiration();
+		redisTokenUtils.addToBlacklist(accessToken, expiration);
+		
+		
+		ResponseCode code = ResponseCode.LOGOUT_SUCCESS;
+        response.setStatus(code.getStatus().value());
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json");
+        response.getWriter().write(
+        		String.format("{\"code\":%s,\"message\":\"%s\"}", code.getCode(), code.getMessage())
+        		);
+		
+		
+		
 	}
+	
+    private void writeErrorResponse(HttpServletResponse response, ErrorCode errorCode) throws IOException {
+        response.setStatus(errorCode.getStatus().getCode());
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write(
+                String.format("{\"code\":%s,\"message\":\"%s\"}", errorCode.getCode(), errorCode.getMessage())
+        );
+    }
 	
 	
 

@@ -1,7 +1,7 @@
 package com.selloum.api.common.response;
 
-import com.selloum.api.common.code.ErrorCode;
 import com.selloum.api.common.code.ResponseCode;
+import com.selloum.core.code.ErrorCode;
 
 import lombok.Getter;
 
@@ -16,8 +16,8 @@ public class BaseResponse<T> {
         return new BaseResponse<>(responseCode, data);
     }
     
-    public static <T> BaseResponse<T> of(ErrorCode responseCode, T data) {
-        return new BaseResponse<>(responseCode, data);
+    public static <T> BaseResponse<T> of(ErrorCode responseCode) {
+        return new BaseResponse<>(responseCode,null);
     }
 
     public BaseResponse(ResponseCode resultCode, T data) {

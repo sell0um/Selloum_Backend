@@ -11,6 +11,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import com.selloum.core.Exception.CustomException;
+import com.selloum.core.code.ErrorCode;
 import com.selloum.core.util.VerificationCodeGenerator;
 import com.selloum.external.mail.service.MailService;
 
@@ -28,8 +29,14 @@ public class MailServiceImpl implements MailService {
 	private final RedisTemplate<String, Object> redisTemplate;
 	private final VerificationCodeGenerator verificationCodeGenerator;
 	
-	@Value("${mail.prefix}")
-	private String redisKeyPrefix;
+	@Value("${mail.prefix.register}")
+	private String redisKeyRegisterPrefix;
+	@Value("${mail.prefix.reset-code}")
+	private String redisKeyResetCodePrefix;
+	@Value("${mail.prefix.reset-verify}")
+	private String redisKeyResetVerifyPrefix;
+	
+	
     @Value("${spring.mail.auth-code-expiration-millis}")
     private int expirationMillis;
 	private String mailSubject = "[Selloum]에서 보낸 이메일 인증 번호  입니다."; 
@@ -46,7 +53,7 @@ public class MailServiceImpl implements MailService {
 			
 			
 			String verificationCode = verificationCodeGenerator.generate();
-			String redisKey = redisKeyPrefix + email;
+			String redisKey = redisKeyRegisterPrefix + email;
 	        redisTemplate.opsForValue().set(
 	            redisKey, 
 	            verificationCode, 
@@ -61,7 +68,7 @@ public class MailServiceImpl implements MailService {
 			
 			mailSender.send(message);
 		} catch (MessagingException e) {
-			throw new CustomException();
+			throw new CustomException(ErrorCode.EMAIL_VERIFY_FAILED);
 		}
 		
 		
@@ -69,17 +76,17 @@ public class MailServiceImpl implements MailService {
 	
 	
 	@Override
-	public boolean verifyEmail(String email, String verifyCode) {
+	public boolean isVerifiedEmail(String email, String verifyCode) {
 		
 		LOGGER.info(" [ MailServiceImpl ] - verifyEmail() ");
 
 		// 1. rediskey 생성후 인증 코드 가져오기
-		String redisKey = redisKeyPrefix + email;
+		String redisKey = redisKeyRegisterPrefix + email;
 		String savedCode = (String)redisTemplate.opsForValue().get(redisKey);
 		
 		// 2. 코드가 없으면 (만료되었거나 존재하지 않음)
 		if(savedCode == null) {
-			throw new CustomException();
+			throw new CustomException(ErrorCode.EMAIL_CODE_EXPIRED);
 		}
 		
 		// 3. 입력 코드와 실제 인증 코드 비교
@@ -94,6 +101,76 @@ public class MailServiceImpl implements MailService {
 	
 	
 	
+
+
+	@Override
+	public void sendResetCodeEmail(String email) {
+		
+		
+		LOGGER.info("[ MailServiceImpl ] - sendResetCodeEmail() ");
+
+		try {
+			MimeMessage message = mailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(message,true);
+			
+			
+			String verificationCode = verificationCodeGenerator.generate();
+			String redisKey = redisKeyResetCodePrefix + email;
+	        redisTemplate.opsForValue().set(
+	            redisKey, 
+	            verificationCode, 
+	            expirationMillis, 
+	            TimeUnit.MINUTES
+	        );
+			String content = createEmailForm(verificationCode);
+			
+			helper.setTo(email);
+			helper.setSubject(mailSubject);
+			helper.setText(content, true);
+			
+			mailSender.send(message);
+		} catch (MessagingException e) {
+			throw new CustomException(ErrorCode.EMAIL_VERIFY_FAILED);
+		}
+		
+		
+	}
+
+
+	@Override
+	public boolean isverifiedResetCodeEmail(String email, String verifyCode) {
+		
+
+		LOGGER.info(" [ MailServiceImpl ] - verifyResetCodeEmail() ");
+
+		// 1. rediskey 생성후 인증 코드 가져오기
+		String redisKey = redisKeyResetCodePrefix+ email;
+		String savedCode = (String)redisTemplate.opsForValue().get(redisKey);
+		
+		// 2. 코드가 없으면 (만료되었거나 존재하지 않음)
+		if(savedCode == null) {
+			throw new CustomException(ErrorCode.EMAIL_CODE_EXPIRED);
+		}
+		
+		// 3. 입력 코드와 실제 인증 코드 비교
+		boolean isValid = savedCode.equals(verifyCode);
+		
+		// 4. 인증 성공 - Redis에서 삭제 (재사용 방지)
+		if(isValid) redisTemplate.delete(redisKey);
+		
+		redisTemplate.opsForValue().set(redisKeyResetVerifyPrefix + email, "true", 5, TimeUnit.MINUTES);
+		
+		
+		return isValid;
+		
+	}
+
+
+
+
+	
+	
+
 	/*********************
 	  Mail 관련 Util 메서드
 	 *********************/
@@ -115,11 +192,4 @@ public class MailServiceImpl implements MailService {
 		return emailFormString;
 		
 	}
-
-
-
-
-	
-	
-
 }

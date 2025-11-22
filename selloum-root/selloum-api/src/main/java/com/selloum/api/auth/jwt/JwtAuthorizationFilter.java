@@ -7,12 +7,14 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.selloum.core.Exception.CustomException;
+import com.selloum.core.code.ErrorCode;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.annotation.PostConstruct;
@@ -28,7 +30,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 	
 	private final Logger LOGGER = LoggerFactory.getLogger(JwtAuthorizationFilter.class);
 	private final JwtTokenProvider jwtTokenProvider;
-	private final RedisTemplate<String, Object> redisTemplate;
+	private final RedisTokenUtils redisTokenUtils;
 	
 	@PostConstruct
 	public void init() {
@@ -44,6 +46,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 		    "/favicon.ico",
 		    "/auth/login",
 		    "/users/sign-up",
+		    "/users/check-id",
 		    "/users/email",
 		    "/users/email/confirm"
     );
@@ -55,105 +58,116 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 	
 	
 	@Override
-	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-			throws ServletException, IOException {
+	protected void doFilterInternal(HttpServletRequest request,
+	                                HttpServletResponse response,
+	                                FilterChain filterChain)
+	        throws ServletException, IOException {
 
-		String uri = request.getRequestURI();
-		
+	    String uri = request.getRequestURI();
+	    LOGGER.info("[ JwtAuthorizationFilter - doFilterInternal() 호출 : {} ]", uri);
 
-		LOGGER.info("[ JwtAuthorizationFilter - doFilterInternal() 호출 ]");
-		
-		
-		// 토큰이 필요하지 않는 API 호출 발생 시 : 아래 로직 처리 없이 다음 필터로 이동
-		if (WHITELIST_URLS.stream().anyMatch(uri::startsWith)) {
-		    filterChain.doFilter(request, response);
-		    return;
-		}
+	    // 1️⃣ 화이트리스트
+	    if (WHITELIST_URLS.stream().anyMatch(uri::startsWith)) {
+	        filterChain.doFilter(request, response);
+	        return;
+	    }
 
-		
-		// 토큰이 필요한 API 호출 시 다음 과정을 수행
-		
+	    // 2️⃣ 헤더에서 AccessToken 추출
+	    String accessToken = request.getHeader(accessTokenHeader);
 
-		// 1. API Request의 Header에 AccessToken을 확인
-		String accessToken = request.getHeader(accessTokenHeader);		
-		
-		// 1-1. 접근 토큰이 없거나 Bearer 토큰이 아닐 경우
-		if (accessToken == null || ! jwtTokenProvider.isStartWithPrfix(accessToken)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-		
-		accessToken = jwtTokenProvider.getTokenWithoutPrefix(accessToken);
-		
-		try {
-			
-			// 1-2. 접근 토큰이 존재할 경우 
-				
-			// 2. 접근 토큰의 유효성 체크
-	    	if(jwtTokenProvider.validateToken(accessToken)) { // 접근 토큰 유효 시
-				
-	    		// 3. 접근 토큰 내의 사용자 정보 확인
-	    		Authentication auth = jwtTokenProvider.getAuthentication(accessToken);
-	    		SecurityContextHolder.getContext().setAuthentication(auth);
-	            
-	    		
+	    if (accessToken == null || !jwtTokenProvider.isStartWithPrfix(accessToken)) {
+	        filterChain.doFilter(request, response);
+	        return;
+	    }
+
+	    accessToken = jwtTokenProvider.getTokenWithoutPrefix(accessToken);
+
+	    try {
+	        LOGGER.info("[ JwtAuthorizationFilter - AccessToken 존재 확인 ]");
+
+	        // 유효한 AccessToken인 경우
+	        if (jwtTokenProvider.validateToken(accessToken)) {
+
+	            // 블랙리스트 확인
+	            if (redisTokenUtils.isBlacklisted(accessToken)) {
+	                writeErrorResponse(response, ErrorCode.INVALID_TOKEN);
+	                return; // 🚨 응답 작성 후 반드시 return
+	            }
+
+	            // 정상 인증
+	            Authentication auth = jwtTokenProvider.getAuthentication(accessToken);
+	            LOGGER.info("✅ AUTH CHECK: {}", auth);
+	            if (auth != null) {
+	                LOGGER.info("✅ AUTH PRINCIPAL: {}", auth.getPrincipal());
+	                LOGGER.info("✅ AUTH AUTHORITIES: {}", auth.getAuthorities());
+	            }
+	            SecurityContextHolder.getContext().setAuthentication(auth);
+
 	            filterChain.doFilter(request, response);
 	            return;
-	    		// 4. 접근 토큰의 오류가 EXPIRED인지 확인
-	    		
-	    	} 
-			
-		} catch (ExpiredJwtException e){ // 토큰 만료 시
-			LOGGER.info("[ JwtAuthorizationFilter - doFilterInternal() : 토큰 만료 ]");
+	        }
 
-			
-		} catch (Exception e){ // 이외의 검증 요류
-			LOGGER.info("[ JwtAuthorizationFilter - doFilterInternal() : 잘못된 AccessToken ]");
-            response.sendError(HttpStatus.UNAUTHORIZED.value(), "Invalid access token");
-            return;
-		} 
-		
-		try {
+	    } catch (ExpiredJwtException e) {
+	        LOGGER.info("[ JwtAuthorizationFilter - AccessToken 만료 ]");
+	        // 아래 Refresh Token 로직으로 진행
+	    } catch (Exception e) {
+	        LOGGER.error("[ JwtAuthorizationFilter - AccessToken 검증 오류 ]", e);
+	        writeErrorResponse(response, ErrorCode.INVALID_TOKEN);
+	        return;
+	    }
 
-			String username = jwtTokenProvider.getUsername(accessToken);
-			String redisKey = "refresh:" + username;
-			
-			String refreshToken = (String)redisTemplate.opsForValue().get(redisKey);
-			
-			// 갱신 토큰이 없는 경우
-			if(refreshToken == null) {
-                response.sendError(HttpStatus.UNAUTHORIZED.value(), "Refresh token expired or not found");
-                return;
-			}
-			
-			
-			if (!jwtTokenProvider.validateToken(refreshToken)) {
-				redisTemplate.delete(redisKey);
-                response.sendError(HttpStatus.UNAUTHORIZED.value(), "Refresh token expired");
-                return;
-            }
-			
-			String role = jwtTokenProvider.getRole(refreshToken);
-			String newAccessToken = jwtTokenProvider.generateToken("access",username, role);
-			
-			// 응답 헤더에 새 Access Token 설정
-            response.setHeader("Authorization", jwtTokenProvider.getTokenWithPrefix(newAccessToken));
+	    // 3️⃣ Refresh Token 검증
+	    try {
+	        String username = jwtTokenProvider.getUsername(accessToken);
+	        String refreshToken = redisTokenUtils.getRefreshToken(username);
 
-			
-    		Authentication auth = jwtTokenProvider.getAuthentication(accessToken);
-    		SecurityContextHolder.getContext().setAuthentication(auth);
-			
-    		filterChain.doFilter(request, response);
-			
-		} catch (ExpiredJwtException  e) {	
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Refresh token expired");
-		} catch (Exception e) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token refresh failed");
-		}
-		
-		
-		
-		
+	        if (refreshToken == null || !jwtTokenProvider.validateToken(refreshToken)) {
+	            redisTokenUtils.deleteRefreshToken(username);
+	            writeErrorResponse(response, ErrorCode.REFRESH_TOKEN_EXPIRED);
+	            return;
+	        }
+
+	        String role = jwtTokenProvider.getRole(refreshToken);
+	        String newAccessToken = jwtTokenProvider.generateToken("access", username, role);
+
+	        response.setHeader("Authorization", jwtTokenProvider.getTokenWithPrefix(newAccessToken));
+
+	        Authentication auth = jwtTokenProvider.getAuthentication(newAccessToken);
+	        LOGGER.info("✅ AUTH CHECK: {}", auth);
+	        if (auth != null) {
+	            LOGGER.info("✅ AUTH PRINCIPAL: {}", auth.getPrincipal());
+	            LOGGER.info("✅ AUTH AUTHORITIES: {}", auth.getAuthorities());
+	        }
+	        SecurityContextHolder.getContext().setAuthentication(auth);
+	        
+	        
+	        LOGGER.info("🎯 [JwtAuthorizationFilter] SecurityContext Authentication : {}", 
+	                SecurityContextHolder.getContext().getAuthentication());
+
+	        filterChain.doFilter(request, response);
+
+	    } catch (Exception e) {
+	        LOGGER.error("[ JwtAuthorizationFilter - RefreshToken 처리 실패 ]", e);
+	        writeErrorResponse(response, ErrorCode.REFRESH_TOKEN_EXPIRED);
+	    }
+	}
+
+	/**
+	 * 에러 응답 작성 유틸 - 커밋 방지 및 중복 호출 방지
+	 */
+	private void writeErrorResponse(HttpServletResponse response, ErrorCode errorCode) throws IOException {
+	    if (response.isCommitted()) {
+	        LOGGER.warn("[ JwtAuthorizationFilter - 이미 커밋된 응답, writeErrorResponse 생략 ]");
+	        return;
+	    }
+
+	    response.resetBuffer(); // 혹시 기존 버퍼 남아있을 경우 초기화
+	    response.setStatus(errorCode.getStatus().getCode());
+	    response.setContentType("application/json;charset=UTF-8");
+	    response.getWriter().write(
+	            String.format("{\"code\":\"%s\",\"message\":\"%s\"}", errorCode.getCode(), errorCode.getMessage())
+	    );
+	    response.flushBuffer(); // 즉시 커밋하고 필터 종료
 	}
 	
 
