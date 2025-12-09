@@ -1,17 +1,24 @@
 package com.selloum.domain.entity;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.selloum.domain.common.BaseEntity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @NoArgsConstructor
@@ -42,43 +49,53 @@ public class User extends BaseEntity {
 
 	@Column(nullable = false)
 	private String role;
-	
+		
 	private String phone;
 	
 	private String status;
 	
+
 	
+	// FK - 일단 양방향 매핑
+    // 사용하지 않는다면 추후 단방향 매핑으로 변경할 것
+	
+	@OneToMany(mappedBy = "user", fetch = FetchType.EAGER , cascade = CascadeType.ALL, orphanRemoval = false)
+	@ToString.Exclude
+	private List<Diary> diaryList = new ArrayList<>();
+	
+	@OneToMany(mappedBy = "user")
+	@ToString.Exclude
+	private List<Report> reportList = new ArrayList<>();
+	
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Reaction> reaction = new ArrayList<>();
+	
+    // 내가 팔로우한 목록
+    @OneToMany(mappedBy = "follower")
+    private List<Follow> followings = new ArrayList<>();
+
+    // 나를 팔로우하는 목록
+    @OneToMany(mappedBy = "following")
+    private List<Follow> followers = new ArrayList<>();
+    
+    /**
+     * Builder
+     */
     @Builder  // 생성자에 직접 붙이기
     public User(String name, String username, String password, 
-                String email, String role, String phone, String status) {
-        this.name = name;
-        this.username = username;
-        this.password = password;
-        this.email = email;
-        this.role = role;
-        this.phone = phone;
-        this.status = status;
+    		String email, String role, String phone, String status) {
+    	this.name = name;
+    	this.username = username;
+    	this.password = password;
+    	this.email = email;
+    	this.role = role;
+    	this.phone = phone;
+    	this.status = status;
     }  
-    
 	
-	
-	
-//	private String profileImage;
-	
-//	/*
-//	 * 연관관계 관련 필드
-//	 */
-//	
-//	@OneToMany(mappedBy = "user", fetch = FetchType.EAGER , cascade = CascadeType.ALL, orphanRemoval = false)
-//	@ToString.Exclude
-//	private List<Diary> diaryList = new ArrayList<>();
-//	
-//	@OneToMany(mappedBy = "user")
-//	@ToString.Exclude
-//	private List<Report> reportList = new ArrayList<>();
-//	
-    
-    
+	/**
+	 * Method
+	 */
     public void userDelete() {
     	this.status = "DELETED";
     }
