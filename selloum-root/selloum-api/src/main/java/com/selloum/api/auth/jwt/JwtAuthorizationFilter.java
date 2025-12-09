@@ -66,13 +66,13 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 	    String uri = request.getRequestURI();
 	    LOGGER.info("[ JwtAuthorizationFilter - doFilterInternal() 호출 : {} ]", uri);
 
-	    // 1️⃣ 화이트리스트
+	    // 1️ 화이트리스트
 	    if (WHITELIST_URLS.stream().anyMatch(uri::startsWith)) {
 	        filterChain.doFilter(request, response);
 	        return;
 	    }
 
-	    // 2️⃣ 헤더에서 AccessToken 추출
+	    // 2️ 헤더에서 AccessToken 추출
 	    String accessToken = request.getHeader(accessTokenHeader);
 
 	    if (accessToken == null || !jwtTokenProvider.isStartWithPrfix(accessToken)) {
@@ -80,6 +80,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 	        return;
 	    }
 
+	    // 접두사 제거한 순수 토큰 추출
 	    accessToken = jwtTokenProvider.getTokenWithoutPrefix(accessToken);
 
 	    try {
@@ -91,16 +92,16 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 	            // 블랙리스트 확인
 	            if (redisTokenUtils.isBlacklisted(accessToken)) {
 	                writeErrorResponse(response, ErrorCode.INVALID_TOKEN);
-	                return; // 🚨 응답 작성 후 반드시 return
+	                return;
 	            }
 
 	            // 정상 인증
 	            Authentication auth = jwtTokenProvider.getAuthentication(accessToken);
-	            LOGGER.info("✅ AUTH CHECK: {}", auth);
+	            
 	            if (auth != null) {
-	                LOGGER.info("✅ AUTH PRINCIPAL: {}", auth.getPrincipal());
-	                LOGGER.info("✅ AUTH AUTHORITIES: {}", auth.getAuthorities());
+	                LOGGER.info("✅ AccessToken don't have Authentication {}", auth.getPrincipal());
 	            }
+	            
 	            SecurityContextHolder.getContext().setAuthentication(auth);
 
 	            filterChain.doFilter(request, response);
@@ -151,6 +152,8 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 	        writeErrorResponse(response, ErrorCode.REFRESH_TOKEN_EXPIRED);
 	    }
 	}
+	
+	
 
 	/**
 	 * 에러 응답 작성 유틸 - 커밋 방지 및 중복 호출 방지

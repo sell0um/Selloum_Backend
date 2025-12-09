@@ -39,17 +39,20 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 			Authentication authentication) throws IOException, ServletException {
 
-		LOGGER.info(" [ CustomAuthenticationSuccessHandler - onAuthenticationSuccess() ] - 로그인 성공 처리 핸들러");
 		
 
         User user = ((CustomUserDetails) authentication.getPrincipal()).getUser();
-        BaseResponse<User> responseBody = null;
+        
+        LOGGER.warn("[Filter : Start] CustomAuthenticationSuccessHandler - {}", user.getUsername());
+        
         
         if(user.getStatus().equals("D")) { // 회원 상태가 D(delete)라면
+        	LOGGER.warn("[Filter : Error] CustomAuthenticationSuccessHandler - {}", ErrorCode.DELETED_USER.getCode());
         	response.setStatus(HttpStatus.FORBIDDEN.value());
             writeJsonResponse(response, BaseResponse.of(ErrorCode.DELETED_USER));
             return;
-        	
+            
+            
         }
         	
     	// 권한 정리
@@ -59,12 +62,14 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
     	String accessToken = jwtTokenProvider.generateToken("access",user.getUsername(), role);
     	String refreshToken = jwtTokenProvider.generateToken("refresh",user.getUsername(), role);
     	
+    	
     	// refreshToken DB(Redis)에 저장
     	long refreshExp = jwtTokenProvider.getRefreshTokenExpiration();
         String redisKey = "refresh:" + user.getUsername();
         redisTokenUtils.saveRefreshToken(redisKey, refreshToken, refreshExp);
     	
         
+        BaseResponse<User> responseBody = null;
     	response.setHeader("Authorization", jwtTokenProvider.getTokenWithPrefix(accessToken));
 	    responseBody = BaseResponse.of(ResponseCode.LOGIN_SUCCESS, user);
     	response.setStatus(HttpStatus.OK.value());
@@ -73,6 +78,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         response.setContentType("application/json");
         writeJsonResponse(response, responseBody);
 		
+        LOGGER.warn("[Filter : End] CustomAuthenticationSuccessHandler - {}", ErrorCode.DELETED_USER.getCode());
 	}
 	
     private void writeJsonResponse(HttpServletResponse response, Object body) throws IOException {

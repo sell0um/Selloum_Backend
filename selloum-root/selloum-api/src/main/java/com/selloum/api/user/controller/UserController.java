@@ -38,7 +38,6 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/users")
 public class UserController {
 	
-	private final Logger LOGGER = LoggerFactory.getLogger(UserController.class);
 	private final RedisTokenUtils redisTokenUtils;
 	private final UserService userService;
 	private final MailService mailService;
@@ -61,7 +60,6 @@ public class UserController {
 	@PostMapping("/sign-up")
 	public ResponseEntity<BaseResponse<UserDto.response>> signUp(@Valid @RequestBody UserDto.request req){
 		
-		LOGGER.info("[ AuthController - signUp ] : 회원가입 시작" + req.getUserName());
 		UserDto.response response = userService.signup(req);
 		return ResponseUtil.success(ResponseCode.REGISTER_SUCCESS, response);
 		
@@ -85,7 +83,6 @@ public class UserController {
 	@GetMapping("/check-id")
 	public ResponseEntity<BaseResponse<String>> checkUserName(@Valid @RequestBody UserDto.request req){
 		
-		LOGGER.info("[ UserController - checkUserName ] : 아이디 중복 확인" + req.getUserName());
 		userService.validateUserName(req.getUserName());
 		return ResponseUtil.success(ResponseCode.AVAILABLE_USERNAME,"NotExsists");
 		
@@ -109,7 +106,6 @@ public class UserController {
 	@PostMapping("/email")
 	public ResponseEntity<BaseResponse<String>> sendEmail(@Valid @RequestBody EmailDto.sendRequest req){
 		
-		LOGGER.info("[ UserController - sendEmail ] : 이메일 인증 요청" + req.getEmail());
 		mailService.sendEmail(req.getEmail());
 		return ResponseUtil.success(ResponseCode.EMAIL_SEND_SUCCESS, null);
 		
@@ -131,7 +127,6 @@ public class UserController {
 	@PostMapping("/email/confirm")
 	public ResponseEntity<BaseResponse<EmailDto.response>> verifyEmail(@Valid @RequestBody EmailDto.verifyRequest req){
 		
-		LOGGER.info("[ UserController - verifyEmail ] : 이메일 인증 확인" + req.getEmail());
 		
 		boolean isValid = mailService.isVerifiedEmail(req.getEmail(), req.getVerifyCode());
 		EmailDto.response response = EmailDto.response.builder()
@@ -161,8 +156,6 @@ public class UserController {
 	
 	@GetMapping("/me")
 	public ResponseEntity<BaseResponse<UserDto.response>> getUserDetail(@AuthenticationPrincipal CustomUserDetails userDetails){
-		
-		LOGGER.info("[ UserController - getUserDetail ] : 회원 정보 조회" + userDetails.getUser().getUsername());
 		UserDto.response response = userService.getUserDetail(userDetails.getUser().getUsername());
 		return ResponseUtil.success(ResponseCode.USER_FOUND,response);
 		
@@ -180,7 +173,6 @@ public class UserController {
 	public ResponseEntity<BaseResponse<UserDto.response>> updateUser(@AuthenticationPrincipal CustomUserDetails userDetails
 																	, @Valid @RequestBody UserDto.request req){
 		
-		LOGGER.info("[ UserController - updateUser ] : 회원 정보 수정" + userDetails.getUser().getUsername());
 		UserDto.response response = userService.updateUser(userDetails.getUser().getUsername(), req);
 		return ResponseUtil.success(ResponseCode.USER_UPDATED,response);
 		
@@ -212,8 +204,6 @@ public class UserController {
 	public ResponseEntity<BaseResponse<String>> updatePassword( @AuthenticationPrincipal CustomUserDetails userDetails,
 																@Valid @RequestBody UserDto.request req){
 		
-		LOGGER.info("[ UserController - updatePassword ] : 비밀번호 변경" + userDetails.getUser().getUsername());
-		LOGGER.info("[ UserController - updatePassword ] : 비밀번호 변경" + req.getPassword());
 		userService.updatePassword(userDetails.getUser().getUsername(), req);
 		
 		return ResponseUtil.success(ResponseCode.PASSWORD_CHANGED,null);
@@ -231,7 +221,6 @@ public class UserController {
 	@PostMapping("/find-id")
 	public ResponseEntity<BaseResponse<String>> findUserName(@Valid @RequestBody UserDto.request req){
 		
-		LOGGER.info("[ UserController - findUserName ] : 아이디 찾기" + req.getName());
 		String userName = userService.findUserName(req);
 		
 		return ResponseUtil.success(ResponseCode.USER_FOUND,userName);
@@ -249,8 +238,6 @@ public class UserController {
 	@PostMapping("/reset-pwd/request")
 	public ResponseEntity<BaseResponse<String>> verifyUserIdentity(@Valid @RequestBody UserDto.request req){
 		
-		LOGGER.info("[ UserController - verifyUserIdentity ] : 비밀번호 재설정 전 본인 인증" + req.getUserName());
-		
 		userService.verifyUserIdentity(req);
 		mailService.sendResetCodeEmail(req.getEmail());
 		
@@ -260,8 +247,6 @@ public class UserController {
 	
 	@PostMapping("/reset-pwd/verify")
 	public ResponseEntity<BaseResponse<EmailDto.response>> verifyResetEmailCode(@Valid @RequestBody EmailDto.verifyRequest req){
-		
-		LOGGER.info("[ UserController - verifyUserIdentity ] : 비밀번호 재설정 전 본인 인증 코드 유효성 검사" + req.getEmail());
 		
 		boolean isValid = mailService.isverifiedResetCodeEmail(req.getEmail(), req.getVerifyCode());
 		EmailDto.response response = EmailDto.response.builder()
@@ -283,8 +268,6 @@ public class UserController {
 	 */
 	@PutMapping("/reset-pwd")
 	public ResponseEntity<BaseResponse<String>> resetPassword(@Valid @RequestBody UserDto.request req){
-		
-		LOGGER.info("[ UserController - resetPassword ] : 비밀번호 초기화 진행" + req.getUserName());
 		
 		if(redisTokenUtils.isVerifiedResetCodeEmail(req.getEmail())) { // 인증된 이메일 + 5분 이내 재설정이면
 			userService.resetPassword(req);

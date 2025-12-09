@@ -28,7 +28,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 	
-	private Logger LOGGER = LoggerFactory.getLogger(UserServiceImpl.class);
 	private final BCryptPasswordEncoder passwordEncoder;
 	private final UserRepository userRepository;
 	private final MailService mailService;
@@ -45,8 +44,6 @@ public class UserServiceImpl implements UserService {
 	
 	@Override
 	public response signup(request req) {
-		
-		LOGGER.info("[ UserServiceImpl - signup ] : 회원 가입" + req.getUserName());
 		
 		User user = User.builder()
 					.name(req.getName())

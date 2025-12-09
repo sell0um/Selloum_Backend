@@ -37,6 +37,16 @@ public class JwtTokenProvider {
 	@Value("${jwt.expiration.refresh}")
 	private String refreshTokenExpiredTime;
 	
+	
+	/**
+	 *  generateToken(String category, String username, String role) - 접근 / 갱신 토큰 생성 메소드
+	 * 
+	 * 
+	 * @param category
+	 * @param username
+	 * @param role
+	 * @return
+	 */
 	public String generateToken(String category, String username, String role) {
 		
 		Date expiration = (category.equals("access") ? new Date(System.currentTimeMillis() + Long.parseLong(accessTokenExpiredTime)) : new Date(System.currentTimeMillis() + Long.parseLong(refreshTokenExpiredTime)));
@@ -52,18 +62,48 @@ public class JwtTokenProvider {
 				.compact();
 	}
 	
+	
+	/**
+	 * getTokenWithPrefix(String token) - 접두사 + Token 생성 메소드
+	 * 
+	 * 
+	 * @param token
+	 * @return
+	 */
 	public String getTokenWithPrefix(String token) {
 		return  prefix+ " " + token;
 	}
+	
+	/**
+	 * getTokenWithoutPrefix(String token) - 접두사 제거 Tokne 추출 메소드
+	 * 
+	 * @param token
+	 * @return
+	 */
 	
 	public String getTokenWithoutPrefix(String token) {
 		return token.substring(prefix.length() + 1);
 	}
 	
+	/**
+	 * 
+	 * isStartWithPrfix(String token) - 설정한 접두사로 시작된 트큰인지 검증하는 메소드
+	 * 
+	 * @param token
+	 * @return
+	 */
 	public boolean isStartWithPrfix(String token) {
 		return token.startsWith(prefix + " ");
 	}
 	
+	
+	/**
+	 * 
+	 * validateToken(String token) - 토큰 유효성 검사 메소드
+	 * 
+	 * @param token
+	 * @return
+	 */
 	public boolean validateToken(String token) {
 		try {
 			
@@ -75,6 +115,23 @@ public class JwtTokenProvider {
 	            throw new CustomException(ErrorCode.INVALID_TOKEN);
 	        }
 	}
+	
+	/**
+	 * isExpired(String token) - 토큰 만료 여부 확인 메소드
+	 * 
+	 * @param token
+	 * @return
+	 */
+	
+	public boolean isExpired(String token) {
+		return parseClaims(token).getExpiration().before(new Date());
+	}
+	
+	
+	/**
+	 * getUsername() / getRole() / getExpried() 토큰에서 특정 Claims 추출 메소드
+	 * 
+	 */
 	
 	public String getUsername(String token) {
 		
@@ -89,9 +146,14 @@ public class JwtTokenProvider {
 		return parseClaims(token).get("role", Long.class);
 	}
 	
-	public boolean isExpired(String token) {
-		return parseClaims(token).getExpiration().before(new Date());
-	}
+	
+	/**
+	 * 
+	 * getAuthentication(String token) - 인증 과정에서 사용할 Authentication 객체 생성 메서드
+	 * 
+	 * @param token
+	 * @return
+	 */
 	
     public Authentication getAuthentication(String token) {
         // 1.⃣ 토큰에서 username 추출
@@ -116,7 +178,63 @@ public class JwtTokenProvider {
         return new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
     }
 	
-    // Claims 파싱
+    
+    
+    
+    
+    
+    
+
+    
+    
+    /****************************************************************************
+     * 
+     *	Getter 대용 메소드
+     *
+     ****************************************************************************/
+    
+    /**
+     * getAccessTokenExpiration() - AccessToken의 만료 시간 Getter 대용 메소드
+     * 
+     * 
+     * @return Long accessTokenExpiredtime
+     */
+    public long getAccessTokenExpiration() {
+    	return Long.parseLong(accessTokenExpiredTime);
+    }
+    
+    /**
+     * getRefreshTokenExpiration() - RefreshToken의 만료 시간 Getter 대용 메소드
+     * 
+     * 
+     * @return Long accessTokenExpiredtime
+     */
+    public long getRefreshTokenExpiration() {
+    	return Long.parseLong(refreshTokenExpiredTime);
+    }
+	
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    /****************************************************************************
+     * 
+	 *	Private 메소드 - Provider 내부용
+	 *	
+	 ****************************************************************************/
+   
+    /**
+     * parseClaims(String token) - Token Claims 추출 메소드
+     * 
+     * @param token
+     * @return
+     */
     private Claims parseClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
@@ -125,15 +243,12 @@ public class JwtTokenProvider {
                 .getBody();
     }
     
-    public long getAccessTokenExpiration() {
-    	return Long.parseLong(accessTokenExpiredTime);
-    }
     
-    public long getRefreshTokenExpiration() {
-    	return Long.parseLong(refreshTokenExpiredTime);
-    }
-	
-    
+    /**
+     * getSigningKey() - secret -> SingingKey 생성 메소드
+     * 
+     * @return
+     */
     private Key getSigningKey() {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);

@@ -87,6 +87,7 @@ public class SecurityConfig {
 								"/users/email/confirm",
 								"/users/sign-up",
 								"/users/check-id"
+								,"/diary"
 								).permitAll()
 						// Swagger
 					    .requestMatchers(
@@ -96,9 +97,10 @@ public class SecurityConfig {
 					            "/swagger-resources/**",
 					            "/webjars/**"
 					    		).permitAll()
-					    // ADMIn 관련은 접근 제한
+					    // ADMIN 관련은 접근 제한
 						.requestMatchers(
 								"/admin/**"
+								
 							).hasRole("ADMIN")
 						// 나머지는 인증 필요
 						.anyRequest().authenticated())

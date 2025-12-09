@@ -35,13 +35,13 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 	}
 	
 	public JwtAuthenticationFilter(AuthenticationManager authenticationManager 
-									, CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler
-									, CustomAuthenticationFailureHandler customAuthenticationFailureHandler) {
+								 , CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler
+							     , CustomAuthenticationFailureHandler customAuthenticationFailureHandler) {
 		super.setAuthenticationManager(authenticationManager);
-		setFilterProcessesUrl("/auth/login");
 		setAuthenticationSuccessHandler(customAuthenticationSuccessHandler);
 		setAuthenticationFailureHandler(customAuthenticationFailureHandler);
-//		afterPropertiesSet();
+
+		setFilterProcessesUrl("/auth/login");
 	}
 	
 	@Override
@@ -51,16 +51,16 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
 
 		try {
-			ObjectMapper om = new ObjectMapper();
-			UserDto.request userDto = om.readValue(request.getInputStream(), UserDto.request.class);
+			
+			UserDto.request userDto = new ObjectMapper().readValue(request.getInputStream(), UserDto.request.class);
 
 			LOGGER.info(" [ JwtAuthenticationFilter - attemptAuthentication ] : " + userDto.getUserName());
 			
-			UsernamePasswordAuthenticationToken authRequest = new UsernamePasswordAuthenticationToken(userDto.getUserName(), userDto.getPassword());		
+			UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDto.getUserName(), userDto.getPassword());		
 			
-			setDetails(request, authRequest);
+			setDetails(request, authToken);
 			
-			return this.getAuthenticationManager().authenticate(authRequest);
+			return this.getAuthenticationManager().authenticate(authToken);
 			
 		} catch (Exception e){
 			throw new RuntimeException(e);
