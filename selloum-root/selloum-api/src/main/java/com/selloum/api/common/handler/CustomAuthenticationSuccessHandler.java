@@ -59,8 +59,8 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
     	String role = user.getRole();
     	
     	// 토큰 생성
-    	String accessToken = jwtTokenProvider.generateToken("access",user.getUsername(), role);
-    	String refreshToken = jwtTokenProvider.generateToken("refresh",user.getUsername(), role);
+    	String accessToken = jwtTokenProvider.generateToken("access",user.getId(), role);
+    	String refreshToken = jwtTokenProvider.generateToken("refresh",user.getId(), role);
     	
     	
     	// refreshToken DB(Redis)에 저장
@@ -71,12 +71,12 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         
         BaseResponse<User> responseBody = null;
     	response.setHeader("Authorization", jwtTokenProvider.getTokenWithPrefix(accessToken));
-	    responseBody = BaseResponse.of(ResponseCode.LOGIN_SUCCESS, user);
+//	    responseBody = BaseResponse.of(ResponseCode.LOGIN_SUCCESS, user);
     	response.setStatus(HttpStatus.OK.value());
         
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json");
-        writeJsonResponse(response, responseBody);
+//        writeJsonResponse(response, responseBody);
 		
         LOGGER.warn("[Filter : End] CustomAuthenticationSuccessHandler - {}", ErrorCode.DELETED_USER.getCode());
 	}

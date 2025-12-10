@@ -15,7 +15,6 @@ import com.selloum.api.user.dto.UserDto;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 
 /**
  * 
@@ -48,6 +47,11 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
 		
 		LOGGER.info(" [ JwtAuthenticationFilter - attemptAuthentication ] : " );
+		
+		if (!request.getRequestURI().equals("/auth/login")) {
+			LOGGER.info("로그인 외의 요청");
+		    return super.attemptAuthentication(request, response); // Body 읽지 않음
+		}
 
 
 		try {

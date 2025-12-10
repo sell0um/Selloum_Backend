@@ -95,7 +95,12 @@ jwt:
 
 logging:
   level:
-    org.springframework.security.web.FilterChainProxy: TRACE
+    org: 
+      springframework : 
+        security: 
+          web :
+            FilterChainProxy: TRACE
+        web: DEBUG
 
 
 

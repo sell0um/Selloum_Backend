@@ -2,29 +2,31 @@ package com.selloum.api.auth.jwt;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import com.selloum.api.auth.domain.CustomUserDetails;
 import com.selloum.core.Exception.CustomException;
 import com.selloum.core.code.ErrorCode;
 import com.selloum.domain.entity.User;
+import com.selloum.domain.repository.UserRepository;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 
 @Component
+@RequiredArgsConstructor
 public class JwtTokenProvider {
+	
+	private final UserRepository userRepository;
 
 	@Value("${jwt.secret-key}")
 	private String secret;
@@ -47,14 +49,14 @@ public class JwtTokenProvider {
 	 * @param role
 	 * @return
 	 */
-	public String generateToken(String category, String username, String role) {
+	public String generateToken(String category, long userId, String role) {
 		
 		Date expiration = (category.equals("access") ? new Date(System.currentTimeMillis() + Long.parseLong(accessTokenExpiredTime)) : new Date(System.currentTimeMillis() + Long.parseLong(refreshTokenExpiredTime)));
 		
 		
 		return Jwts.builder()
 				.claim("category", category)
-				.claim("username", username)
+				.claim("userId", userId)
 				.claim("role", role)
 				.setIssuedAt(new Date(System.currentTimeMillis()))
 				.setExpiration(expiration)
@@ -110,9 +112,9 @@ public class JwtTokenProvider {
 		     Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token);
 	            return true;
 	        } catch (ExpiredJwtException e) {
-	            throw new CustomException(ErrorCode.EXPIRED_TOKEN);
+	            throw e;
 	        } catch (JwtException | IllegalArgumentException e) {
-	            throw new CustomException(ErrorCode.INVALID_TOKEN);
+	            throw e;
 	        }
 	}
 	
@@ -133,9 +135,9 @@ public class JwtTokenProvider {
 	 * 
 	 */
 	
-	public String getUsername(String token) {
+	public Long getUserId(String token) {
 		
-		return parseClaims(token).get("username", String.class);
+		return parseClaims(token).get("userId", Long.class);
 	}
 	
 	public String getRole(String token) {
@@ -157,25 +159,38 @@ public class JwtTokenProvider {
 	
     public Authentication getAuthentication(String token) {
         // 1.⃣ 토큰에서 username 추출
-        String username = getUsername(token);
+        Long userId = getUserId(token);
 
         // 2. 토큰에서 Role 추출
         String role = getRole(token);
         
+        System.out.println(role + " -> Role" );
+        
+        // 2-1. 필수 Claim이 없으면 인증 불가
+        if ( userId == null || userId == 0 ||role == null || role.isEmpty()) {
+        	throw new JwtException("Invalid Token: Claim is missing");
+        }
+        User user = userRepository.findById(userId).orElseThrow(
+        			() -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        		);
+        
         // 3 authorities 설정
-        List<SimpleGrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority(role));
+//        List<SimpleGrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority(role));
 
         // 4 Spring Security가 이해하는 UserDetails 형태로 구성
-        User user = User.builder()
-                .username(username)
-                .role(role)
-                .password("") // JWT에는 비밀번호 없음
-                .build();
+//        User user = User.builder()
+//                .username(username)
+//                .role(role)
+//                .password("") // JWT에는 비밀번호 없음
+//                .email(domainUser.getEmail())
+//                .build();
         
         CustomUserDetails userDetails = new CustomUserDetails(user);
 
         // 5 Authentication 객체 반환
-        return new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
+//        return new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
+        return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
     }
 	
     
