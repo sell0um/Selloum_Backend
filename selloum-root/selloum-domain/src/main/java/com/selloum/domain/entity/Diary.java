@@ -24,6 +24,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Getter
 @AllArgsConstructor
+@Builder
 @Table(name = "diary")
 public class Diary extends BaseEntity {
 	
@@ -53,22 +54,10 @@ public class Diary extends BaseEntity {
 	@JoinColumn(name = "user_id")
 	private User user;
 	
-	@OneToMany(mappedBy = "diary", cascade = CascadeType.ALL)
-	private List<Reaction> reaction;
+//	@OneToMany(mappedBy = "diary", cascade = CascadeType.ALL)
+//	private List<Reaction> reaction;
 	
-	@Builder
-	public Diary(long diaryId, String diaryFilePath, String content, boolean isAnalyzed, boolean isPublic,
-			boolean complaint, Emotion emotion, User user) {
-		super();
-		this.diaryId = diaryId;
-		this.diaryFilePath = diaryFilePath;
-		this.content = content;
-		this.isAnalyzed = isAnalyzed;
-		this.isPublic = isPublic;
-		this.complaint = complaint;
-		this.emotion = emotion;
-		this.user = user;
-	}
+
     
 	
 }

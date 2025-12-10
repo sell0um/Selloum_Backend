@@ -58,25 +58,26 @@ public class User extends BaseEntity {
 	
 	// FK - 일단 양방향 매핑
     // 사용하지 않는다면 추후 단방향 매핑으로 변경할 것
+	// OneToMany는 
 	
-	@OneToMany(mappedBy = "user", fetch = FetchType.EAGER , cascade = CascadeType.ALL, orphanRemoval = false)
-	@ToString.Exclude
-	private List<Diary> diaryList = new ArrayList<>();
-	
-	@OneToMany(mappedBy = "user")
-	@ToString.Exclude
-	private List<Report> reportList = new ArrayList<>();
-	
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Reaction> reaction = new ArrayList<>();
-	
-    // 내가 팔로우한 목록
-    @OneToMany(mappedBy = "follower")
-    private List<Follow> followings = new ArrayList<>();
-
-    // 나를 팔로우하는 목록
-    @OneToMany(mappedBy = "following")
-    private List<Follow> followers = new ArrayList<>();
+//	@OneToMany(mappedBy = "user", fetch = FetchType.EAGER , cascade = CascadeType.ALL, orphanRemoval = false)
+//	@ToString.Exclude
+//	private List<Diary> diaryList = new ArrayList<>();
+//	
+//	@OneToMany(mappedBy = "user")
+//	@ToString.Exclude
+//	private List<Report> reportList = new ArrayList<>();
+//	
+//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<Reaction> reaction = new ArrayList<>();
+//	
+//    // 내가 팔로우한 목록
+//    @OneToMany(mappedBy = "follower")
+//    private List<Follow> followings = new ArrayList<>();
+//
+//    // 나를 팔로우하는 목록
+//    @OneToMany(mappedBy = "following")
+//    private List<Follow> followers = new ArrayList<>();
     
     /**
      * Builder

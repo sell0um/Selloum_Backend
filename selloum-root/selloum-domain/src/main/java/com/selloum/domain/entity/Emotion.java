@@ -31,7 +31,8 @@ public class Emotion {
 	@Column(nullable = false, unique = false)
 	private String type;
 	
-	@OneToMany(mappedBy="emotion")
-	private List<Diary> diary;
+	// OneToMany는 추후에 사용 시 주석 해제
+//	@OneToMany(mappedBy="emotion")
+//	private List<Diary> diary;
 	
 }
