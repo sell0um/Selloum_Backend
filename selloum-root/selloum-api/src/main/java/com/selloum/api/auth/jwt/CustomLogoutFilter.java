@@ -48,6 +48,7 @@ public class CustomLogoutFilter extends GenericFilterBean{
         if (!request.getRequestURI().equals("/auth/logout") ||
                 !request.getMethod().equalsIgnoreCase("POST")) {
                 filterChain.doFilter(request, response);
+                System.out.println("돌고 나왔음");
                 return;
         }
             
@@ -59,7 +60,7 @@ public class CustomLogoutFilter extends GenericFilterBean{
 		}
 		
 		accessToken = jwtTokenProvider.getTokenWithoutPrefix(accessToken);
-		String userName = jwtTokenProvider.getUsername(accessToken);
+		Long userName = jwtTokenProvider.getUserId(accessToken);
 		
 		
 		redisTokenUtils.deleteRefreshToken(userName);

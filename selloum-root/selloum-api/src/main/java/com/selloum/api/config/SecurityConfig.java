@@ -1,6 +1,5 @@
 package com.selloum.api.config;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
@@ -20,7 +19,6 @@ import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.selloum.api.auth.jwt.CustomLogoutFilter;
 import com.selloum.api.auth.jwt.JwtAuthenticationFilter;
@@ -28,11 +26,9 @@ import com.selloum.api.auth.jwt.JwtAuthorizationFilter;
 import com.selloum.api.auth.service.impl.CustomUserDetailsService;
 import com.selloum.api.common.handler.CustomAuthenticationFailureHandler;
 import com.selloum.api.common.handler.CustomAuthenticationSuccessHandler;
+import com.selloum.api.common.handler.JwtAccessDeniedHandler;
+import com.selloum.api.common.handler.JwtAuthenticationEntryPoint;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;;
 
 /**
@@ -53,6 +49,8 @@ public class SecurityConfig {
 	private final CustomAuthenticationFailureHandler authenticationFailureHandler;
 	private final CustomAuthenticationSuccessHandler authenticationSuccessHandler;
 	private final AuthenticationConfiguration authenticationConfiguration;
+	private final JwtAuthenticationEntryPoint entryPoint;
+	private final JwtAccessDeniedHandler deniedHandler;
 
 	
 	/*
@@ -79,6 +77,11 @@ public class SecurityConfig {
 		return http
 				.csrf(AbstractHttpConfigurer::disable)															//CSRF 보호 비활성화
 				.cors(cors -> cors.configurationSource(corsConfigurationSource()))								// CORS 커스텀 설정 적용
+				.exceptionHandling(ex -> ex
+		                .authenticationEntryPoint(entryPoint)  // 401 처리
+		                .accessDeniedHandler(deniedHandler)    // 403 처리
+		            )
+				
 				.authorizeHttpRequests(auth -> auth
 						
 						// 회원 가입
@@ -96,15 +99,16 @@ public class SecurityConfig {
 					            "/swagger-resources/**",
 					            "/webjars/**"
 					    		).permitAll()
-					    // ADMIn 관련은 접근 제한
+					    // ADMIN 관련은 접근 제한
 						.requestMatchers(
 								"/admin/**"
+								
 							).hasRole("ADMIN")
 						// 나머지는 인증 필요
 						.anyRequest().authenticated())
 				
 				// 인가 필터 실행 -> 다음 인증 필터
-				.addFilterAt(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 				.addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
 				.addFilterBefore(customLogoutFilter, LogoutFilter.class)								// 로그아웃 필터
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) 	//세션 미사용

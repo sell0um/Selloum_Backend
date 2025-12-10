@@ -41,13 +41,13 @@ public class RedisTokenUtils {
     }
 
     /** Refresh Token 조회 */
-    public String getRefreshToken(String username) {
-        return redisTemplate.opsForValue().get(REFRESH_PREFIX + username);
+    public String getRefreshToken(Long userId) {
+        return redisTemplate.opsForValue().get(REFRESH_PREFIX + userId);
     }
 
     /** Refresh Token 삭제 */
-    public void deleteRefreshToken(String username) {
-        redisTemplate.delete(REFRESH_PREFIX + username);
+    public void deleteRefreshToken(Long userId) {
+        redisTemplate.delete(REFRESH_PREFIX + userId);
     }
 
     /** Access Token 블랙리스트 등록 */

@@ -34,17 +34,19 @@ public class CustomAuthenticationProvider implements AuthenticationProvider{
 		LOGGER.info(" [ CustomAuthenticationProvider - authenticate ] " );
 		
 		String username = authentication.getName();
-		String rawPassword = (String) authentication.getCredentials();
+		String rawPassword = authentication.getCredentials().toString();
 		
 		UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-		LOGGER.info("Passwoard Test : " + rawPassword + " : " +  userDetails.getPassword());
 		
 		// 비밀번호 검증
 		if(!bCryptPasswordEncoder.matches(rawPassword, userDetails.getPassword())) {
 			throw new BadCredentialsException("비밀번호가 일치하지 않습니다.");
 		}
 		
-		return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+		return new UsernamePasswordAuthenticationToken(
+				userDetails, 
+				null, 
+				userDetails.getAuthorities());
 	}
 
 	@Override

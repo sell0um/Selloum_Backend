@@ -10,7 +10,18 @@ spring:
   application:
     name:
       selloum-root
-
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+# Batch - MetaData Table Create
+  batch:
+    jdbc:
+      initialize-schema: always # 자동으로 Batch MataTable 생성
+    job:
+      enabled: false  # 어플리케이션 실행시 job 자동 실행 방지
+    properties:
+      chunk-size: 1
 # Redis
   data:
     redis:
@@ -84,7 +95,12 @@ jwt:
 
 logging:
   level:
-    org.springframework.security.web.FilterChainProxy: TRACE
+    org: 
+      springframework : 
+        security: 
+          web :
+            FilterChainProxy: TRACE
+        web: DEBUG
 
 
 

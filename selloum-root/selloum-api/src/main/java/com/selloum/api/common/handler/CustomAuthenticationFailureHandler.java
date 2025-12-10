@@ -35,7 +35,7 @@ public class CustomAuthenticationFailureHandler implements AuthenticationFailure
 	public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
 			AuthenticationException exception) throws IOException, ServletException {
 
-        LOGGER.warn("[ CustomAuthenticationFailureHandler - onAuthenticationFailure( )] 로그인 실패 - {}", exception.getMessage());
+        LOGGER.warn("[Filter : Start] CustomAuthenticationFailureHandler - {}", exception.getMessage());
 
         // 기본 응답 상태
         HttpStatus status = HttpStatus.UNAUTHORIZED;
@@ -67,9 +67,7 @@ public class CustomAuthenticationFailureHandler implements AuthenticationFailure
         ObjectMapper mapper = new ObjectMapper();
         response.getWriter().write(mapper.writeValueAsString(responseBody));
 
-        LOGGER.info("[ CustomAuthenticationFailureHandler - onAuthenticationFailure( )] → 응답 전송 완료: {}", code.name());
-		
-		
+        LOGGER.warn("[Filter : End] CustomAuthenticationFailureHandler - 응답 전송 완료 : {}", code.name());
 		
 	}
 

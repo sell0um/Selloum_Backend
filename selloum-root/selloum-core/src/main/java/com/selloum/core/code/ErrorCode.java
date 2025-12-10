@@ -62,6 +62,7 @@ public enum ErrorCode {
 	 INVALID_EMOTION_TYPE(Status.BAD_REQUEST, "E-D005", "유효하지 않은 감정 유형입니다."),
 	 DIARY_ACCESS_DENIED(Status.FORBIDDEN, "E-D006", "해당 다이어리에 접근할 수 없습니다."),
 	 EMPTY_DIARY_CONTENT(Status.BAD_REQUEST, "E-D007", "다이어리 내용이 비어 있습니다."),
+	 DIARY_ANALYZE_FAILED(Status.INTERNAL_SERVER_ERROR, "E-D008", "다이어리 분석 중 오류가 발생했습니다."),
 	
 	 /* ==============================
 	    REPORT (E-Rxxx)

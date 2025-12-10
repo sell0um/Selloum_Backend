@@ -28,7 +28,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 	
-	private Logger LOGGER = LoggerFactory.getLogger(UserServiceImpl.class);
 	private final BCryptPasswordEncoder passwordEncoder;
 	private final UserRepository userRepository;
 	private final MailService mailService;
@@ -45,8 +44,6 @@ public class UserServiceImpl implements UserService {
 	
 	@Override
 	public response signup(request req) {
-		
-		LOGGER.info("[ UserServiceImpl - signup ] : 회원 가입" + req.getUserName());
 		
 		User user = User.builder()
 					.name(req.getName())
@@ -94,14 +91,14 @@ public class UserServiceImpl implements UserService {
 		accessToken = jwtTokenProvider.getTokenWithoutPrefix(accessToken);
 		
 		// 유저 아이디 추출
-		String userName = jwtTokenProvider.getUsername(accessToken);
+		Long userId = jwtTokenProvider.getUserId(accessToken);
 		
 		// 해당 회원 정보 조회
-		User user = userRepository.findByUsername(userName).
+		User user = userRepository.findById(userId).
 				orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 		
 		// RefreshToken 제거
-		String redisKey = "refresh:" + userName;
+		String redisKey = "refresh:" + userId;
 		redisTemplate.delete(redisKey);
 		
 		 // 5. AccessToken 블랙리스트 등록 (선택)
@@ -120,6 +117,8 @@ public class UserServiceImpl implements UserService {
 				.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 		
 		user.updateInfo(req.getName(), req.getUserName(), req.getEmail(), req.getPhone());
+		
+		userRepository.save(user);
 
 		return toResponse(user);
 	}
@@ -148,6 +147,8 @@ public class UserServiceImpl implements UserService {
 				.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 		
 		user.changePassword(passwordEncoder.encode(req.getPassword()));
+		
+		userRepository.save(user);
 		
 		return toResponse(user);
 	}

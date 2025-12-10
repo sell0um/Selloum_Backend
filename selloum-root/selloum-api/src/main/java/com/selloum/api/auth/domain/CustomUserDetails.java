@@ -9,13 +9,14 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import com.selloum.domain.entity.User;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-@Data
+@Getter
 public class CustomUserDetails implements UserDetails {
-
+	
+	private static final long serialVersionUID = 1L;
 	
 	private final User user;
 
@@ -31,7 +32,7 @@ public class CustomUserDetails implements UserDetails {
 
 	@Override
 	public String getUsername() {
-		return user.getName();
+		return user.getUsername();
 	}
 
 }
