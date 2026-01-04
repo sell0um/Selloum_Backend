@@ -56,7 +56,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         }
         	
     	// 권한 정리
-    	String role = user.getRole();
+    	String role = user.getRole().name();
     	
     	// 토큰 생성
     	String accessToken = jwtTokenProvider.generateToken("access",user.getId(), role);
