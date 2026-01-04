@@ -1,5 +1,6 @@
 package com.selloum.domain.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -8,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.selloum.domain.dto.EmotionCountProjection;
 import com.selloum.domain.entity.Diary;
 
 @Repository
@@ -25,5 +27,34 @@ public interface DiaryRepository extends JpaRepository<Diary, Long>{
 					@Param("userId")long userId, 
 					@Param("year")Integer year, 
 					@Param("month")Integer month);
+    
+    
+    @Query("""
+            select d
+            from Diary d
+            where d.diaryId = :diaryId
+              and d.user.id = :userId
+              and d.isAnalyzed = true
+              and d.analyzeAt >= :from
+        """)
+    Optional<Diary> findProcessableDiary(
+            @Param("userId") Long userId,
+            @Param("diaryId") Long diaryId,
+            @Param("from") LocalDateTime from
+    );
+    
+    
+    @Query("""
+    	    select d.emotion.type as emotionType, count(d) as cnt
+    	    from Diary d
+    	    where d.createdAt between :startDate and :endDate
+    	      and d.isAnalyzed = true
+    	    group by d.emotion.type
+    	""")
+    	List<EmotionCountProjection> countEmotionByPeriod(
+    	    @Param("startDate") LocalDateTime startDate,
+    	    @Param("endDate") LocalDateTime endDate
+    	);
+    
 
 }

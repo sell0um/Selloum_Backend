@@ -1,24 +1,21 @@
 package com.selloum.domain.entity;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.selloum.domain.common.BaseEntity;
+import com.selloum.domain.enums.Role;
+import com.selloum.domain.enums.UserStatus;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 @Entity
 @NoArgsConstructor
@@ -48,11 +45,13 @@ public class User extends BaseEntity {
 	private String email;
 
 	@Column(nullable = false)
-	private String role;
+	@Enumerated(EnumType.STRING)
+	private Role role;
 		
 	private String phone;
 	
-	private String status;
+	@Enumerated(EnumType.STRING)
+	private UserStatus status = UserStatus.U;
 	
 
 	
@@ -84,7 +83,7 @@ public class User extends BaseEntity {
      */
     @Builder  // 생성자에 직접 붙이기
     public User(String name, String username, String password, 
-    		String email, String role, String phone, String status) {
+    		String email, Role role, String phone, UserStatus status) {
     	this.name = name;
     	this.username = username;
     	this.password = password;
@@ -98,7 +97,11 @@ public class User extends BaseEntity {
 	 * Method
 	 */
     public void userDelete() {
-    	this.status = "DELETED";
+    	this.status = UserStatus.D;
+    }
+    
+    public void userBan() {
+    	this.status = UserStatus.B;
     }
     
     public void updateInfo(String name, String username, String email, String phone) {

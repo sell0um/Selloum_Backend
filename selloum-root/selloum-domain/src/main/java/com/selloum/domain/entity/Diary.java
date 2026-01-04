@@ -1,10 +1,12 @@
 package com.selloum.domain.entity;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.selloum.domain.common.BaseEntity;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -32,16 +34,18 @@ public class Diary extends BaseEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long diaryId;
 
-	private String diaryFilePath;
+	private String fileKey;
 	
 	private String content;
 
-	private boolean isAnalyzed = false;
-	
 	private boolean isPublic;
 	
-	private boolean complaint;
+	private boolean isComplaint = false;
 	
+	private boolean isAnalyzed = false;
+	
+	@Column(nullable = true)
+	private LocalDateTime analyzeAt;
 	
 	// FK - Emotion / User
 	
@@ -54,10 +58,24 @@ public class Diary extends BaseEntity {
 	@JoinColumn(name = "user_id")
 	private User user;
 	
-//	@OneToMany(mappedBy = "diary", cascade = CascadeType.ALL)
-//	private List<Reaction> reaction;
+	@OneToMany(mappedBy = "diary", cascade = CascadeType.ALL)
+	private List<Reaction> reaction;
 	
-
-    
+	
+	
+	
+	public void togglePublic() {
+		this.isPublic = !this.isPublic;
+	}
+	
+	public void updateContent(String newContent) {
+		this.content = newContent;
+	}
+	
+	public void successAnalyze(Emotion emotion) {
+		this.emotion = emotion;
+		this.isAnalyzed = true;
+		this.analyzeAt = LocalDateTime.now();
+	}
 	
 }
